@@ -24,7 +24,7 @@ const CONFIGURACION_MONGO = {
     // Enunciado: Pregunta 2 - Insertar en la coleccion productos el raton gamer.
     "operacion_escritura": {
         "coleccion_objetivo": "productos", 
-        "comando_ejecutar": 'db.productos.insertOne({ _id: 5, nombre: "Raton Gamer", precio: 70, stock: 15, categoriaId: 1 })'
+        "comando_ejecutar": 'db.productos.insertOne({ nombre: "Raton Gamer", precio: 70, stock: 15, categoriaId: 1 })'
     },
 
     // [LOG] CLAVE_BUSQUEDA: filtro_proyeccion_usuarios
@@ -63,7 +63,7 @@ const CONFIGURACION_MONGO = {
             "comando_ejecutar": 'db.usuarios.aggregate([ { $group: { _id: "$rol", total: { $sum: 1 } } } ])'
         },
         {
-            "caso_variante_b_sumar_stock": "Variante B: Calcular el stock total por categoriaId en productos (Suma)",
+            "caso_variante_b_sumar_stock": "Variante B: Calcular el stock total por categoriaId in productos (Suma)",
             "comando_ejecutar": 'db.productos.aggregate([ { $group: { _id: "$categoriaId", totalStock: { $sum: "$stock" } } } ])'
         },
         {
@@ -108,8 +108,15 @@ const CONFIGURACION_MONGO = {
 function moduloMigracionNeo4j() {
     const estado_puerto = "CONEXION_ESTABLECIDA_PORT_7474";
     
+    // [LOG] CLAVE_BUSQUEDA: neo_visualizar_grafos_relacion
+    // Enunciado: Mostrar/enumerar nodos y sus relaciones completas para ver el dibujo en el browser (personas, r, m).
+    const consulta_visualizar_grafo = `
+        MATCH (personas:Persona)-[r:AMIGO_DE]-(m) 
+        RETURN personas, r, m
+    `;
+
     // [LOG] CLAVE_BUSQUEDA: neo_ordenacion_agregacion
-    // Enunciado: Pregunta 1 - Modifica la consulta para ordenar los resultados por numero de empleados/trabajadores descendente de cada empresa.
+    // Enunciado: Modifica la consulta para ordenar los resultados por numero de empleados/trabajadores descendente de cada empresa o el numero de amigos por persona.
     const consulta_ordenar_descendente = `
         MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa) 
         RETURN e.nombre, count(p) AS trabajadores 
@@ -117,7 +124,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_limite_resultados_limit
-    // Enunciado: Pregunta 1.2 - Ordenar los resultados por trabajadores descendente y mostrar solo los 3 primeros (LIMIT).
+    // Enunciado: Ordenar los resultados por trabajadores descendente y mostrar solo los 3 primeros (LIMIT).
     const consulta_limitar_top = `
         MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa) 
         RETURN e.nombre, count(p) AS trabajadores 
@@ -126,14 +133,14 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_limpieza_duplicados_distinct
-    // Enunciado: Pregunta 2 - Modifica la siguiente consulta para devolver solo nombres unicos de personas que trabajan con otras (DISTINCT).
+    // Enunciado: Modifica la siguiente consulta para devolver solo nombres unicos de personas que trabajan con otras (DISTINCT).
     const consulta_nombres_unicos = `
         MATCH (p:Persona)-[:TRABAJA_CON]->(o:Persona) 
         RETURN DISTINCT p.nombre
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_filtrado_agregaciones_with
-    // Enunciado: Pregunta 3 - Modifica la consulta para devolver solo las ciudades con mas de 2 personas (habitantes) usando WITH.
+    // Enunciado: Modifica la consulta para devolver solo las ciudades con mas de 2 personas (habitantes) usando WITH.
     const consulta_filtrar_ciudades = `
         MATCH (p:Persona)-[:VIVE_EN]->(c:Ciudad) 
         WITH c, count(p) AS habitantes 
@@ -141,33 +148,45 @@ function moduloMigracionNeo4j() {
         RETURN c.nombre, habitantes
     `;
 
-    // [LOG] CLAVE_BUSQUEDA: neo_conteo_relaciones_nodo
-    // Enunciado: Pregunta 4 - Encuentra las universidades junto con el numero de estudiantes (mas de un estudiante).
-    const consulta_conteo_estudiantes = `
-        MATCH (p:Persona)-[:ESTUDIO_EN]->(u:Universidad) 
-        WITH u, count(p) AS total_estudiantes 
-        WHERE total_estudiantes > 1 
-        RETURN u.nombre, total_estudiantes
+    // [LOG] CLAVE_BUSQUEDA: neo_juntar_patrones_madrid_empresa
+    // Enunciado: Contar cuantas Personas que viven en una ciudad concreta (ej. Madrid) trabajan en cada Empresa.
+    const consulta_personas_madrid_empresa = `
+        MATCH (c:Ciudad {nombre: "Madrid"})<-[:VIVE_EN]-(p:Persona)-[:TRABAJA_EN]->(m:Empresa) 
+        RETURN m.nombre AS Empresa, count(p) AS TotalPersonas 
+        ORDER BY TotalPersonas DESC
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_todos_nodos_relacion_compleja
+    // Enunciado: Encuentra personas que estan conectadas por amistad a alguien que trabaja en TODAS las empresas del dataset.
+    const consulta_amigos_trabajadores_totales = `
+        MATCH (e:Empresa) 
+        WITH count(e) AS totalEmpresas      
+        MATCH (empleado:Persona)-[:TRABAJA_EN]->(empresa:Empresa) 
+        WITH totalEmpresas, empleado, count(empresa) AS empresasDeEmpleado 
+        WHERE empresasDeEmpleado = totalEmpresas 
+        MATCH (persona:Persona)-[:AMIGO_DE]-(empleado) 
+        RETURN DISTINCT persona.nombre AS Persona, empleado.nombre AS AmigoQueTrabajaEnTodo
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_companeros_misma_ciudad
+    // Enunciado: Encontrar personas que viven en la misma ciudad que sus compañeros de trabajo.
+    const consulta_companeros_ciudad = `
+        MATCH (p1:Persona)-[:TRABAJA_EN]->(e:Empresa)<-[:TRABAJA_EN]-(p2:Persona) 
+        MATCH (p1)-[:VIVE_EN]->(c:Ciudad)<-[:VIVE_EN]-(p2) 
+        WHERE p1 <> p2 
+        RETURN DISTINCT p1.nombre AS Persona, c.nombre AS Ciudad
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_evitar_duplicados_espejos
-    // Enunciado: Pregunta 5 - Modifica la consulta para evitar duplicados en pares de personas que viven en la misma ciudad (p1.id < p2.id).
+    // Enunciado: Modifica la consulta para evitar duplicados en pares de personas que viven en la misma ciudad o son amigos (elementId).
     const consulta_evitar_espejos = `
         MATCH (p1:Persona)-[:VIVE_EN]->(c:Ciudad)<-[:VIVE_EN]-(p2:Persona) 
-        WHERE p1.id < p2.id 
-        RETURN p1.nombre, p2.nombre, c.nombre
-    `;
-
-    // [LOG] CLAVE_BUSQUEDA: neo_interseccion_patrones_multiples
-    // Enunciado: Pregunta 6 - Encuentra pares de personas que viven en la misma ciudad y ademas trabajan juntas (Interseccion de patrones).
-    const consulta_interseccion_patrones = `
-        MATCH (p1:Persona)-[:VIVE_EN]->(c:Ciudad)<-[:VIVE_EN]-(p2:Persona), (p1)-[:TRABAJA_CON]-(p2) 
-        WHERE p1.id < p2.id 
+        WHERE elementId(p1) < elementId(p2) 
         RETURN p1.nombre, p2.nombre, c.nombre
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_relaciones_opcionales_optional
-    // Enunciado: Pregunta 7 - Modifica la consulta para incluir tambien a aquellas personas que no participan en ningun proyecto (usando OPTIONAL MATCH).
+    // Enunciado: Modifica la consulta para incluir tambien a aquellas personas que no participan en ningun proyecto (usando OPTIONAL MATCH).
     const consulta_match_opcional = `
         MATCH (p:Persona) 
         OPTIONAL MATCH (p)-[:PARTICIPA_EN]->(pr:Proyecto) 
@@ -175,12 +194,11 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_caminos_longitud_variable_intermedios
-    // Enunciado: Pregunta 8 - Obtiene los nodos intermedios en los caminos de amistad de longitud exacta hasta 2 saltos (*2).
+    // Enunciado: Obtiene los nodos intermedios en los caminos de amistad de longitud exacta hasta 2 saltos.
     const consulta_nodos_intermedios = `
-        MATCH path = (a:Persona)-[:AMIGO_DE*2]->(b:Persona) 
-        UNWIND nodes(path) AS nodo 
-        WHERE nodo <> a AND nodo <> b 
-        RETURN DISTINCT nodo.nombre AS Intermediarios
+        MATCH (inicio:Persona)-[:AMIGO_DE]-(intermedio:Persona)-[:AMIGO_DE]-(fin:Persona) 
+        WHERE elementId(inicio) < elementId(fin) 
+        RETURN inicio.nombre AS Alguien, intermedio.nombre AS NodoIntermedio, fin.nombre AS OtroAmigo
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_caza_errores_rapidos
