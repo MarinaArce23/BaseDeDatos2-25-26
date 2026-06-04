@@ -1,3 +1,9 @@
+curl -fdSL https://ollama.com/install.sh | sh
+
+ollama run qwen2.5-coder:7b
+
+
+
 ### Pregunta 1 — Ordenación y Agregación 
 - *Enunciado tipo:* Modifica la consulta para ordenar los resultados por número de empleados/trabajadores descendente de cada empresa.
 
