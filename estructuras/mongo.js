@@ -34,6 +34,13 @@ const CONFIGURACION_MONGO = {
         "comando_ejecutar": 'db.usuarios.find({ estado: "activo" }, { nombre: 1, correo: 1, _id: 0 })'
     },
 
+    // [LOG] CLAVE_BUSQUEDA: filtros_complejos_operadores
+    // Enunciado: Pregunta 3.2 - Consultar productos con precio mayor o igual a 50 ($gte) o categoriaId igual a 1 ($or).
+    "lectura_filtros_avanzados": {
+        "coleccion_objetivo": "productos",
+        "comando_ejecutar": 'db.productos.find({ $or: [ { precio: { $gte: 50 } }, { categoriaId: 1 } ] })'
+    },
+
     // [LOG] CLAVE_BUSQUEDA: update_actualizacion_productos
     // Enunciado: Pregunta 4 - Actualizar el producto "Laptop" para que su stock sea 8.
     "operacion_modificacion": {
@@ -41,8 +48,15 @@ const CONFIGURACION_MONGO = {
         "comando_ejecutar": 'db.productos.updateOne({ nombre: "Laptop" }, { $set: { stock: 8 } })'
     },
 
+    // [LOG] CLAVE_BUSQUEDA: borrado_documentos_eliminar
+    // Enunciado: Pregunta 4.2 - Eliminar todos los productos que tengan stock igual a 0 (deleteMany).
+    "operacion_borrado": {
+        "coleccion_objetivo": "productos",
+        "comando_ejecutar": 'db.productos.deleteMany({ stock: 0 })'
+    },
+
     // [LOG] CLAVE_BUSQUEDA: agrupacion_framework_aggregate
-    // Enunciado: Pregunta 5 - Utilizando Aggregation Framework, calcular el monto total recaudado por cada categoria.
+    // Enunciado: Pregunta 5 - Utilizando Aggregation Framework, calcular agregaciones por grupos ($group).
     "pipelines_de_agrupacion": [
         {
             "caso_variante_a_contar_usuarios": "Variante A: Calcular el numero de usuarios por rol",
@@ -100,6 +114,15 @@ function moduloMigracionNeo4j() {
         MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa) 
         RETURN e.nombre, count(p) AS trabajadores 
         ORDER BY trabajadores DESC
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_limite_resultados_limit
+    // Enunciado: Pregunta 1.2 - Ordenar los resultados por trabajadores descendente y mostrar solo los 3 primeros (LIMIT).
+    const consulta_limitar_top = `
+        MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa) 
+        RETURN e.nombre, count(p) AS trabajadores 
+        ORDER BY trabajadores DESC 
+        LIMIT 3
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_limpieza_duplicados_distinct
