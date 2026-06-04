@@ -24,7 +24,7 @@ const CONFIGURACION_MONGO = {
     // Enunciado: Pregunta 2 - Insertar en la coleccion productos el raton gamer.
     "operacion_escritura": {
         "coleccion_objetivo": "productos", 
-        "comando_ejecutar": 'db.productos.insertOne({ _id: 5, nombre: "Raton Gamer", precio: 70, stock: 15, categoriaId: 1})'
+        "comando_ejecutar": 'db.productos.insertOne({ _id: 5, nombre: "Raton Gamer", precio: 70, stock: 15, categoriaId: 1 })'
     },
 
     // [LOG] CLAVE_BUSQUEDA: filtro_proyeccion_usuarios
@@ -59,15 +59,15 @@ const CONFIGURACION_MONGO = {
     // Enunciado: Pregunta 5 - Utilizando Aggregation Framework, calcular agregaciones por grupos ($group).
     "pipelines_de_agrupacion": [
         {
-            "caso_variante_a_contar_usuarios": "Variante A: Calcular el numero de usuarios por rol",
+            "caso_variante_a_contar_usuarios": "Variante A: Calcular el numero de usuarios por rol (Conteo)",
             "comando_ejecutar": 'db.usuarios.aggregate([ { $group: { _id: "$rol", total: { $sum: 1 } } } ])'
         },
         {
-            "caso_variante_b_sumar_stock": "Variante B: Calcular el stock total por categoriaId en productos",
+            "caso_variante_b_sumar_stock": "Variante B: Calcular el stock total por categoriaId en productos (Suma)",
             "comando_ejecutar": 'db.productos.aggregate([ { $group: { _id: "$categoriaId", totalStock: { $sum: "$stock" } } } ])'
         },
         {
-            "caso_variante_c_promedio_salario": "Variante C: Calcular el salario promedio por departamentoId en empleados",
+            "caso_variante_c_promedio_salario": "Variante C: Calcular el salario promedio por departamentoId en empleados (Media)",
             "comando_ejecutar": 'db.empleados.aggregate([ { $group: { _id: "$departamentoId", promedioSalario: { $avg: "$salario" } } } ])'
         }
     ],
@@ -94,10 +94,10 @@ const CONFIGURACION_MONGO = {
     },
 
     // [LOG] CLAVE_BUSQUEDA: proyeccion_total_productos
-    // Enunciado: Pregunta 9 - Realizar una consulta que devuelva solo el campo nombre de todos los productos (Proyeccion total sin filtro).
+    // Enunciado: Pregunta 9 - Realizar una consulta que devuelva solo el campo nombre y precio de todos los productos (Proyeccion total sin filtro).
     "proyeccion_sin_filtro": {
         "coleccion_objetivo": "productos", 
-        "comando_ejecutar": 'db.productos.find( {},  { nombre: 1, _id: 0 })'
+        "comando_ejecutar": 'db.productos.find({}, { nombre: 1, precio: 1, _id: 0 })'
     }
 };
 
@@ -151,7 +151,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_evitar_duplicados_espejos
-    // Enunciado: Pregunta 5 - Modifica la consulta para evitar duplicados en pares de personas que viven en la misma ciudad (evitar que salga Ana-Luis y luego Luis-Ana).
+    // Enunciado: Pregunta 5 - Modifica la consulta para evitar duplicados en pares de personas que viven en la misma ciudad (p1.id < p2.id).
     const consulta_evitar_espejos = `
         MATCH (p1:Persona)-[:VIVE_EN]->(c:Ciudad)<-[:VIVE_EN]-(p2:Persona) 
         WHERE p1.id < p2.id 
@@ -167,7 +167,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_relaciones_opcionales_optional
-    // Enunciado: Pregunta 7 - Modifica la consulta para incluir tambien a aquellas personas que no participan en ningun proyecto (evitando que queden excluidas usando OPTIONAL MATCH).
+    // Enunciado: Pregunta 7 - Modifica la consulta para incluir tambien a aquellas personas que no participan en ningun proyecto (usando OPTIONAL MATCH).
     const consulta_match_opcional = `
         MATCH (p:Persona) 
         OPTIONAL MATCH (p)-[:PARTICIPA_EN]->(pr:Proyecto) 
@@ -175,7 +175,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_caminos_longitud_variable_intermedios
-    // Enunciado: Pregunta 8 - Obtes los nodos intermedios en los caminos (paths) de amistad de longitud exacta hasta 2 saltos (Longitud variable).
+    // Enunciado: Pregunta 8 - Obtiene los nodos intermedios en los caminos de amistad de longitud exacta hasta 2 saltos (*2).
     const consulta_nodos_intermedios = `
         MATCH path = (a:Persona)-[:AMIGO_DE*2]->(b:Persona) 
         UNWIND nodes(path) AS nodo 
