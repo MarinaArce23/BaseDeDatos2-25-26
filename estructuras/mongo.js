@@ -98,7 +98,79 @@ const CONFIGURACION_MONGO = {
     "proyeccion_sin_filtro": {
         "coleccion_objetivo": "productos", 
         "comando_ejecutar": 'db.productos.find({}, { nombre: 1, precio: 1, _id: 0 })'
-    }
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: filtro_precio_mayor_que
+    // Enunciado: Consultar productos con precio superior a 50.
+    "consulta_precio_mayor_que": {
+        "comando_ejecutar": 'db.productos.find({ precio: { $gt: 50 } })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: filtro_precio_menor_que
+    // Enunciado: Consultar productos con precio inferior a 100.
+    "consulta_precio_menor_que": {
+        "comando_ejecutar": 'db.productos.find({ precio: { $lt: 100 } })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: filtro_multiple_and
+    // Enunciado: Consultar productos con precio >= 50 y stock > 0.
+    "consulta_filtro_and": {
+        "comando_ejecutar": 'db.productos.find({ $and: [ { precio: { $gte: 50 } }, { stock: { $gt: 0 } } ] })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: ordenar_precio_descendente
+    // Enunciado: Ordenar productos por precio descendente.
+    "consulta_ordenar_descendente": {
+        "comando_ejecutar": 'db.productos.find().sort({ precio: -1 })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: ordenar_precio_ascendente
+    // Enunciado: Ordenar productos por precio ascendente.
+    "consulta_ordenar_ascendente": {
+        "comando_ejecutar": 'db.productos.find().sort({ precio: 1 })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: limitar_resultados
+    // Enunciado: Mostrar únicamente los 3 primeros documentos.
+    "consulta_limitar_resultados": {
+        "comando_ejecutar": 'db.productos.find().limit(3)'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: top_tres_productos_mas_caros
+    // Enunciado: Obtener los tres productos más caros.
+    "consulta_top_tres": {
+        "comando_ejecutar": 'db.productos.find().sort({ precio: -1 }).limit(3)'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: contar_documentos
+    // Enunciado: Contar usuarios con estado activo.
+    "consulta_contar_documentos": {
+        "comando_ejecutar": 'db.usuarios.countDocuments({ estado: "activo" })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: valores_unicos_distinct
+    // Enunciado: Obtener valores únicos de categoriaId.
+    "consulta_distinct": {
+        "comando_ejecutar": 'db.productos.distinct("categoriaId")'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: buscar_un_documento
+    // Enunciado: Buscar un único documento.
+    "consulta_find_one": {
+        "comando_ejecutar": 'db.productos.findOne({ nombre: "Laptop" })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: actualizar_varios_documentos
+    // Enunciado: Actualizar múltiples documentos.
+    "consulta_update_many": {
+        "comando_ejecutar": 'db.productos.updateMany({ stock: 0 }, { $set: { estado: "agotado" } })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: eliminar_un_documento
+    // Enunciado: Eliminar un único producto.
+    "consulta_delete_one": {
+        "comando_ejecutar": 'db.productos.deleteOne({ nombre: "Laptop" })'
+    },
 };
 
 
@@ -137,6 +209,36 @@ function moduloMigracionNeo4j() {
     const consulta_nombres_unicos = `
         MATCH (p:Persona)-[:TRABAJA_CON]->(o:Persona) 
         RETURN DISTINCT p.nombre
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_caminos_longitud_variable_paths
+    // Enunciado: Pregunta 2 - Obtén los nodos intermedios en paths de amistad de longitud variable.
+    const consulta_nodos_intermedios_path = `
+        MATCH p = (a:Persona)-[:AMIGO_DE*2..]->(b:Persona)
+        UNWIND nodes(p)[1..-1] AS nodoIntermedio
+        RETURN DISTINCT nodoIntermedio.nombre AS Intermedios
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_filtrado_universidades_estudiantes
+    // Enunciado: Pregunta 4 - Encuentra universidades con más de un estudiante.
+    const consulta_universidades_mas_un_estudiante = `
+        MATCH (p:Persona)-[:ESTUDIO_EN]->(u:Universidad)
+        WITH u, count(p) AS total_estudiantes
+        WHERE total_estudiantes > 1
+        RETURN u.nombre AS Universidad, total_estudiantes
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_conectividad_total_nodos
+    // Enunciado: Pregunta 8 - Encuentra personas que están conectadas a todas las demás mediante algún path.
+    const consulta_personas_conectadas_a_todo_el_grafo = `
+        MATCH (todas:Persona)
+        WITH count(todas) AS total_personas
+        MATCH (p1:Persona)
+        MATCH p = (p1)-[*]->(p2:Persona)
+        WHERE p1 <> p2
+        WITH p1, total_personas, count(DISTINCT p2) AS alcanzadas
+        WHERE alcanzadas = total_personas - 1
+        RETURN p1.nombre AS PersonaConectada
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_filtrado_agregaciones_with
@@ -204,8 +306,103 @@ function moduloMigracionNeo4j() {
     // [LOG] CLAVE_BUSQUEDA: neo_caza_errores_rapidos
     // Error tipo: MATCH (p:Persona)-[:TRABAJA_EN]->(e)-[:VIVE_EN]->(c) -> Error: Las empresas no viven en ciudades en este dataset.
     const solucion_error_dataset = `
-        MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa), (p)-[:VIVE_EN]->(c:Ciudad) 
+        MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa)
+        MATCH (p)-[:VIVE_EN]->(c:Ciudad) 
         RETURN p.nombre, e.nombre, c.nombre
+    `;
+
+        // [LOG] CLAVE_BUSQUEDA: neo_filtrar_personas_por_edad
+    // Enunciado: Obtener personas mayores de 30 años.
+    const consulta_filtrar_personas_por_edad = `
+        MATCH (p:Persona) 
+        WHERE p.edad > 30 
+        RETURN p.nombre, p.edad
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_crear_nuevo_nodo
+    // Enunciado: Crear una nueva persona.
+    const consulta_crear_nuevo_nodo = `
+        CREATE (p:Persona {id:6, nombre:"Pedro", edad:25})
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_crear_nueva_relacion
+    // Enunciado: Crear una relación AMIGO_DE entre Ana y Luis.
+    const consulta_crear_nueva_relacion = `
+        MATCH (p1:Persona {nombre:"Ana"}), (p2:Persona {nombre:"Luis"}) 
+        CREATE (p1)-[:AMIGO_DE]->(p2)
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_crear_si_no_existe_nodo
+    // Enunciado: Crear ciudad solo si no existe.
+    const consulta_merge_nodo = `
+        MERGE (c:Ciudad {nombre:"Valencia"}) 
+        RETURN c
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_crear_si_no_existe_relacion
+    // Enunciado: Crear relación solo si no existe.
+    const consulta_merge_relacion = `
+        MATCH (p:Persona {nombre:"Ana"})
+        MERGE (c:Ciudad {nombre:"Valencia"})
+        MERGE (p)-[:VIVE_EN]->(c)
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_actualizar_propiedad_nodo
+    // Enunciado: Actualizar edad de Ana.
+    const consulta_actualizar_propiedad_nodo = `
+        MATCH (p:Persona {nombre:"Ana"}) 
+        SET p.edad = 31 
+        RETURN p
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_eliminar_propiedad_nodo
+    // Enunciado: Eliminar una propiedad de los nodos.
+    const consulta_eliminar_propiedad_nodo = `
+        MATCH (p:Persona) 
+        REMOVE p.salario
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_eliminar_relacion
+    // Enunciado: Eliminar relaciones de amistad.
+    const consulta_eliminar_relacion = `
+        MATCH (p1:Persona)-[r:AMIGO_DE]->(p2:Persona) 
+        DELETE r
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_eliminar_nodo_y_relaciones
+    // Enunciado: Eliminar nodo y todas sus relaciones.
+    const consulta_eliminar_nodo_y_relaciones = `
+        MATCH (p:Persona {nombre:"Pedro"}) 
+        DETACH DELETE p
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_caminos_longitud_variable
+    // Enunciado: Obtener caminos de amistad entre 1 y 3 saltos.
+    const consulta_caminos_longitud_variable = `
+        MATCH p=(a:Persona)-[:AMIGO_DE*1..3]->(b:Persona) 
+        RETURN p
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_mostrar_propiedades_relacion
+    // Enunciado: Mostrar propiedades de las relaciones de amistad.
+    const consulta_mostrar_propiedades_relacion = `
+        MATCH (p1)-[r:AMIGO_DE]->(p2) 
+        RETURN p1.nombre, p2.nombre, r.intensidad, r.since
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_agrupar_con_collect
+    // Enunciado: Agrupar habitantes por ciudad.
+    const consulta_agrupar_con_collect = `
+        MATCH (p:Persona)-[:VIVE_EN]->(c:Ciudad) 
+        RETURN c.nombre, collect(p.nombre) AS habitantes
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_comprobar_valores_no_nulos
+    // Enunciado: Obtener personas con edad definida.
+    const consulta_comprobar_valores_no_nulos = `
+        MATCH (p:Persona) 
+        WHERE p.edad IS NOT NULL 
+        RETURN p
     `;
 
     return true;
