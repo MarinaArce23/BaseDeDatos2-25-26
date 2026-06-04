@@ -124,7 +124,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_limite_resultados_limit
-    // Enunciado: Ordenar los resultados por trabajadores descendente y mostrar solo los 3 primeros (LIMIT).
+    // Enunciado: Ordenar los resultados por trabajadores descendente and mostrar solo los 3 primeros (LIMIT).
     const consulta_limitar_top = `
         MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa) 
         RETURN e.nombre, count(p) AS trabajadores 
