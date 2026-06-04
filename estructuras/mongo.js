@@ -14,64 +14,73 @@ const CONFIGURACION_MONGO = {
     "estado": "PROCESANDO_TESTS",
     
     // [LOG] CLAVE_BUSQUEDA: teoria_arquitectura
+    // Enunciado: Pregunta 1 - Teoria / Arquitectura
     "arquitectura_base_datos": {
         "motor_almacenamiento": "WiredTiger",
         "modelo_estructura": "Base de Datos Documental"
     },
 
     // [LOG] CLAVE_BUSQUEDA: insercion_basica_productos
+    // Enunciado: Pregunta 2 - Insertar en la coleccion productos el raton gamer.
     "operacion_escritura": {
         "coleccion_objetivo": "productos", 
         "comando_ejecutar": 'db.productos.insertOne({ _id: 5, nombre: "Raton Gamer", precio: 70, stock: 15, categoriaId: 1})'
     },
 
     // [LOG] CLAVE_BUSQUEDA: filtro_proyeccion_usuarios
+    // Enunciado: Pregunta 3 - Consultar los usuarios con estado "activo" mostrando solo nombre y correo.
     "operacion_lectura_con_filtro": {
         "coleccion_objetivo": "usuarios", 
         "comando_ejecutar": 'db.usuarios.find({ estado: "activo" }, { nombre: 1, correo: 1, _id: 0 })'
     },
 
     // [LOG] CLAVE_BUSQUEDA: update_actualizacion_productos
+    // Enunciado: Pregunta 4 - Actualizar el producto "Laptop" para que su stock sea 8.
     "operacion_modificacion": {
         "coleccion_objetivo": "productos", 
         "comando_ejecutar": 'db.productos.updateOne({ nombre: "Laptop" }, { $set: { stock: 8 } })'
     },
 
     // [LOG] CLAVE_BUSQUEDA: agrupacion_framework_aggregate
+    // Enunciado: Pregunta 5 - Utilizando Aggregation Framework, calcular el monto total recaudado por cada categoria.
     "pipelines_de_agrupacion": [
         {
-            "caso_variante_a_contar_usuarios": "Calcular numero de usuarios por rol",
+            "caso_variante_a_contar_usuarios": "Variante A: Calcular el numero de usuarios por rol",
             "comando_ejecutar": 'db.usuarios.aggregate([ { $group: { _id: "$rol", total: { $sum: 1 } } } ])'
         },
         {
-            "caso_variante_b_sumar_stock": "Calcular stock total por categoriaId",
+            "caso_variante_b_sumar_stock": "Variante B: Calcular el stock total por categoriaId en productos",
             "comando_ejecutar": 'db.productos.aggregate([ { $group: { _id: "$categoriaId", totalStock: { $sum: "$stock" } } } ])'
         },
         {
-            "caso_variante_c_promedio_salario": "Calcular salario promedio por departamentoId",
+            "caso_variante_c_promedio_salario": "Variante C: Calcular el salario promedio por departamentoId en empleados",
             "comando_ejecutar": 'db.empleados.aggregate([ { $group: { _id: "$departamentoId", promedioSalario: { $avg: "$salario" } } } ])'
         }
     ],
 
     // [LOG] CLAVE_BUSQUEDA: indice_simple_usuarios
+    // Enunciado: Pregunta 6 - Crear un indice sobre el campo edad (o precio/categoriaId) en usuarios / productos.
     "optimizacion_indice_unico": {
         "coleccion_objetivo": "usuarios", 
         "comando_ejecutar": 'db.usuarios.createIndex({ edad: 1 })'
     },
 
     // [LOG] CLAVE_BUSQUEDA: indice_compuesto_usuarios
+    // Enunciado: Pregunta 7 - Crear un indice compuesto sobre los campos estado + edad en usuarios / productos.
     "optimizacion_indice_compuesto": {
         "coleccion_objetivo": "usuarios", 
         "comando_ejecutar": 'db.usuarios.createIndex({ estado: 1, edad: 1 })'
     },
 
     // [LOG] CLAVE_BUSQUEDA: rendimiento_explain_stats
+    // Enunciado: Pregunta 8 - Ejecutar explain("executionStats") sobre la consulta que busca usuarios activos.
     "analisis_de_rendimiento": {
         "coleccion_objetivo": "usuarios", 
         "comando_ejecutar": 'db.usuarios.find({ estado: "activo" }).explain("executionStats")'
     },
 
     // [LOG] CLAVE_BUSQUEDA: proyeccion_total_productos
+    // Enunciado: Pregunta 9 - Realizar una consulta que devuelva solo el campo nombre de todos los productos (Proyeccion total sin filtro).
     "proyeccion_sin_filtro": {
         "coleccion_objetivo": "productos", 
         "comando_ejecutar": 'db.productos.find( {},  { nombre: 1, _id: 0 })'
@@ -86,7 +95,7 @@ function moduloMigracionNeo4j() {
     const estado_puerto = "CONEXION_ESTABLECIDA_PORT_7474";
     
     // [LOG] CLAVE_BUSQUEDA: neo_ordenacion_agregacion
-    // Enunciado: Modifica la consulta para ordenar los resultados por numero de empleados descendente.
+    // Enunciado: Pregunta 1 - Modifica la consulta para ordenar los resultados por numero de empleados/trabajadores descendente de cada empresa.
     const consulta_ordenar_descendente = `
         MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa) 
         RETURN e.nombre, count(p) AS trabajadores 
@@ -94,14 +103,14 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_limpieza_duplicados_distinct
-    // Enunciado: Modifica la consulta para devolver solo nombres unicos de personas (DISTINCT).
+    // Enunciado: Pregunta 2 - Modifica la siguiente consulta para devolver solo nombres unicos de personas que trabajan con otras (DISTINCT).
     const consulta_nombres_unicos = `
         MATCH (p:Persona)-[:TRABAJA_CON]->(o:Persona) 
         RETURN DISTINCT p.nombre
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_filtrado_agregaciones_with
-    // Enunciado: Modifica la consulta para devolver solo las ciudades con mas de 2 habitantes (WITH...WHERE).
+    // Enunciado: Pregunta 3 - Modifica la consulta para devolver solo las ciudades con mas de 2 personas (habitantes) usando WITH.
     const consulta_filtrar_ciudades = `
         MATCH (p:Persona)-[:VIVE_EN]->(c:Ciudad) 
         WITH c, count(p) AS habitantes 
@@ -110,7 +119,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_conteo_relaciones_nodo
-    // Enunciado: Encuentra las universidades junto con el numero de estudiantes (mas de un estudiante).
+    // Enunciado: Pregunta 4 - Encuentra las universidades junto con el numero de estudiantes (mas de un estudiante).
     const consulta_conteo_estudiantes = `
         MATCH (p:Persona)-[:ESTUDIO_EN]->(u:Universidad) 
         WITH u, count(p) AS total_estudiantes 
@@ -119,7 +128,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_evitar_duplicados_espejos
-    // Enunciado: Evitar duplicados en pares de personas en la misma ciudad (evitar Ana-Luis y Luis-Ana).
+    // Enunciado: Pregunta 5 - Modifica la consulta para evitar duplicados en pares de personas que viven en la misma ciudad (evitar que salga Ana-Luis y luego Luis-Ana).
     const consulta_evitar_espejos = `
         MATCH (p1:Persona)-[:VIVE_EN]->(c:Ciudad)<-[:VIVE_EN]-(p2:Persona) 
         WHERE p1.id < p2.id 
@@ -127,7 +136,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_interseccion_patrones_multiples
-    // Enunciado: Pares de personas que viven en la misma ciudad y ademas trabajan juntas.
+    // Enunciado: Pregunta 6 - Encuentra pares de personas que viven en la misma ciudad y ademas trabajan juntas (Interseccion de patrones).
     const consulta_interseccion_patrones = `
         MATCH (p1:Persona)-[:VIVE_EN]->(c:Ciudad)<-[:VIVE_EN]-(p2:Persona), (p1)-[:TRABAJA_CON]-(p2) 
         WHERE p1.id < p2.id 
@@ -135,7 +144,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_relaciones_opcionales_optional
-    // Enunciado: Incluir tambien a aquellas personas que no participan en ningun proyecto (OPTIONAL MATCH).
+    // Enunciado: Pregunta 7 - Modifica la consulta para incluir tambien a aquellas personas que no participan en ningun proyecto (evitando que queden excluidas usando OPTIONAL MATCH).
     const consulta_match_opcional = `
         MATCH (p:Persona) 
         OPTIONAL MATCH (p)-[:PARTICIPA_EN]->(pr:Proyecto) 
@@ -143,7 +152,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_caminos_longitud_variable_intermedios
-    // Enunciado: Obten los nodos intermedios en los caminos de amistad de longitud exacta hasta 2 saltos.
+    // Enunciado: Pregunta 8 - Obtes los nodos intermedios en los caminos (paths) de amistad de longitud exacta hasta 2 saltos (Longitud variable).
     const consulta_nodos_intermedios = `
         MATCH path = (a:Persona)-[:AMIGO_DE*2]->(b:Persona) 
         UNWIND nodes(path) AS nodo 
@@ -152,7 +161,7 @@ function moduloMigracionNeo4j() {
     `;
 
     // [LOG] CLAVE_BUSQUEDA: neo_caza_errores_rapidos
-    // Error tipo: MATCH (p:Persona)-[:TRABAJA_EN]->(e)-[:VIVE_EN]->(c) -> La empresa (e) no vive en la ciudad.
+    // Error tipo: MATCH (p:Persona)-[:TRABAJA_EN]->(e)-[:VIVE_EN]->(c) -> Error: Las empresas no viven en ciudades en este dataset.
     const solucion_error_dataset = `
         MATCH (p:Persona)-[:TRABAJA_EN]->(e:Empresa), (p)-[:VIVE_EN]->(c:Ciudad) 
         RETURN p.nombre, e.nombre, c.nombre
