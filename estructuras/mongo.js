@@ -72,14 +72,14 @@ const CONFIGURACION_MONGO = {
         }
     ],
 
-    // [LOG] CLAVE_BUSQUEDA: indice_simple_usuarios
+    // [LOG] CLAVE_BUSQUEDA: indice_simple_usuarios_optimizar
     // Enunciado: Pregunta 6 - Crear un indice sobre el campo edad (o precio/categoriaId) en usuarios / productos.
     "optimizacion_indice_unico": {
         "coleccion_objetivo": "usuarios", 
         "comando_ejecutar": 'db.usuarios.createIndex({ edad: 1 })'
     },
 
-    // [LOG] CLAVE_BUSQUEDA: indice_compuesto_usuarios
+    // [LOG] CLAVE_BUSQUEDA: indice_compuesto_usuarios_optimizar
     // Enunciado: Pregunta 7 - Crear un indice compuesto sobre los campos estado + edad en usuarios / productos.
     "optimizacion_indice_compuesto": {
         "coleccion_objetivo": "usuarios", 
@@ -170,6 +170,13 @@ const CONFIGURACION_MONGO = {
     // Enunciado: Eliminar un único producto.
     "consulta_delete_one": {
         "comando_ejecutar": 'db.productos.deleteOne({ nombre: "Laptop" })'
+    },
+
+    // [LOG] CLAVE_BUSQUEDA: agrupacion_calcular_totales_multiplicar
+    // Enunciado: Calcular ingresos totales multiplicando dos campos ($multiply) y sumándolos ($sum) por grupo.
+    "agregacion_con_multiplicacion": {
+        "coleccion_objetivo": "ventas",
+        "comando_ejecutar": 'db.ventas.aggregate([ { $group: { _id: "$tiendaId", ingresosTotales: { $sum: { $multiply: [ "$precio", "$cantidad" ] } } } } ])'
     },
 };
 
@@ -390,7 +397,7 @@ function moduloMigracionNeo4j() {
         RETURN p1.nombre, p2.nombre, r.intensidad, r.since
     `;
 
-    // [LOG] CLAVE_BUSQUEDA: neo_agrupar_con_collect
+    // [LOG] CLAVE_BUSQUEDA: neo_agrupar_con_collect_dinamico
     // Enunciado: Agrupar habitantes por ciudad.
     const consulta_agrupar_con_collect = `
         MATCH (p:Persona)-[:VIVE_EN]->(c:Ciudad) 
@@ -403,6 +410,21 @@ function moduloMigracionNeo4j() {
         MATCH (p:Persona) 
         WHERE p.edad IS NOT NULL 
         RETURN p
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_path_extraer_relaciones
+    // Enunciado: Obtener todos los objetos relación de un camino usando la función nativa 'relationships'.
+    const consulta_extraer_relaciones_path = `
+        MATCH p = (s:Servidor)-[:CONECTADO_A*3]->(d:Dispositivo)
+        RETURN relationships(p) AS enlaces_auditados
+    `;
+
+    // [LOG] CLAVE_BUSQUEDA: neo_mutar_propiedades_relacion_set
+    // Enunciado: Modificar o añadir una propiedad a una relación capturando su variable en el patrón.
+    const consulta_modificar_propiedad_relacion = `
+        MATCH (p:Persona)-[r:PARTICIPA_EN]->(pr:Proyecto {nombre: "Alfa"})
+        SET r.rol = "Senior"
+        RETURN r
     `;
 
     return true;
